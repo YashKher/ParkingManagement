@@ -1,0 +1,313 @@
+{% extends 'parking/base.html' %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="dash-header">
+    <div>
+        <h1>Vehicle <span>Check-In</span></h1>
+        <p>REGISTER A NEW VEHICLE ENTRY — NUMBER PLATE AUTO-PREVIEWS BELOW</p>
+    </div>
+</div>
+
+<div class="form-container">
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            style="flex-shrink:0;margin-top:1px">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        {{ error }}
+    </div>
+    {% endif %}
+
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            style="flex-shrink:0;margin-top:1px">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <div>
+            <strong>PLEASE FIX THE FOLLOWING ERRORS:</strong>
+            {% for field in form %}
+            {% for error in field.errors %}
+            <div>• {{ field.label|upper }}: {{ error }}</div>
+            {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+            <div>• {{ error }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Live Plate Preview -->
+    <div class="plate-preview-wrap">
+        <p class="plate-hint">🇮🇳 LIVE INDIAN NUMBER PLATE PREVIEW</p>
+        <div class="india-plate" id="plate-preview">
+            <div class="plate-top-bar">
+                <span class="flag-stripe" style="background:#FF9933;"></span>
+                <span class="flag-stripe" style="background:#FFFFFF;"></span>
+                <span class="flag-stripe" style="background:#138808;"></span>
+                <span class="plate-ind-text">IND</span>
+            </div>
+            <div class="plate-number" id="plate-number-text">GJ 00 AA 0000</div>
+            <div class="plate-category-label" id="plate-category-label">PRIVATE</div>
+        </div>
+        <div id="state-mismatch-warn"
+            style="display:none;margin-top:10px;font-size:12px;color:#dc2626;font-weight:700;letter-spacing:0.3px;">
+            ⚠ VEHICLE NUMBER PREFIX DOES NOT MATCH STATE CODE
+        </div>
+    </div>
+
+    <form method="post" autocomplete="off" id="entry-form">
+        {% csrf_token %}
+
+        <div class="form-grid-3col">
+            <div class="form-group">
+                <label>Vehicle Number</label>
+                <input type="text" name="vehicle_number" id="id_vehicle_number" class="form-control"
+                    placeholder="GJ 00 AA 0000" value="{{ form.vehicle_number.value|default:'' }}" maxlength="20"
+                    style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:2px;font-size:15px;font-weight:700;"
+                    required>
+                <div class="invalid-feedback" id="vnum-error">VEHICLE NUMBER MUST MATCH STATE CODE</div>
+            </div>
+
+            <div class="form-group">
+                <label>State Code</label>
+                <input type="text" name="state_code" id="id_state_code" class="form-control" placeholder="GJ"
+                    value="{{ form.state_code.value|default:'' }}" maxlength="5"
+                    style="text-transform:uppercase;font-family:'JetBrains Mono',monospace;letter-spacing:3px;font-size:18px;font-weight:800;"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label>Vehicle Type</label>
+                {{ form.vehicle_type }}
+            </div>
+
+            <div class="form-group form-col-full">
+                <label>Plate Category <span
+                        style="font-weight:500;text-transform:none;color:#94a3b8;font-size:11px;">(Indian Registration
+                        Type)</span></label>
+                {{ form.plate_type }}
+            </div>
+
+            <div class="form-group">
+                <label>Owner Name</label>
+                <input type="text" name="owner_name" id="id_owner_name" class="form-control" placeholder="FULL NAME"
+                    value="{{ form.owner_name.value|default:'' }}" style="text-transform:uppercase;" required>
+            </div>
+
+            <div class="form-group">
+                <label>Mobile Number</label>
+                <div class="mobile-input-wrap">
+                    <span class="mobile-prefix">+91</span>
+                    <input type="text" name="mobile" id="id_mobile" class="form-control" placeholder="9876543210"
+                        value="{{ form.mobile.value|default:'' }}" maxlength="10" inputmode="numeric" id="id_mobile"
+                        required>
+                </div>
+                <div class="invalid-feedback" id="mobile-error">MUST BE 10 DIGITS (6/7/8/9 START)</div>
+            </div>
+        </div>
+
+        <!-- Plate Reference -->
+        <details class="plate-ref-table mt-4" id="plate-ref">
+            <summary>📋 PLATE REFERENCE GUIDE & PARKING RATES — CLICK TO EXPAND</summary>
+            <table class="modern-table" style="font-size:12px;margin-top:0;">
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Plate Type</th>
+                        <th>1st Hour</th>
+                        <th>+Hour</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>BIKE</td>
+                        <td><span class="plate-mini" style="background:#fff;color:#000;">PRIVATE</span></td>
+                        <td>₹20</td>
+                        <td>₹10</td>
+                    </tr>
+                    <tr>
+                        <td>CAR</td>
+                        <td><span class="plate-mini" style="background:#fff;color:#000;">PRIVATE</span></td>
+                        <td>₹50</td>
+                        <td>₹20</td>
+                    </tr>
+                    <tr>
+                        <td>AUTO</td>
+                        <td><span class="plate-mini" style="background:#FFD700;color:#000;">COMMERCIAL</span></td>
+                        <td>₹30</td>
+                        <td>₹15</td>
+                    </tr>
+                    <tr>
+                        <td>TRUCK</td>
+                        <td><span class="plate-mini" style="background:#FFD700;color:#000;">COMMERCIAL</span></td>
+                        <td>₹100</td>
+                        <td>₹50</td>
+                    </tr>
+                    <tr>
+                        <td>BUS</td>
+                        <td><span class="plate-mini" style="background:#FFD700;color:#000;">COMMERCIAL</span></td>
+                        <td>₹120</td>
+                        <td>₹60</td>
+                    </tr>
+                    <tr>
+                        <td>EV</td>
+                        <td><span class="plate-mini" style="background:#008000;color:#fff;">EV GREEN</span></td>
+                        <td>₹40</td>
+                        <td>₹15</td>
+                    </tr>
+                    <tr>
+                        <td>MILITARY</td>
+                        <td><span class="plate-mini" style="background:#1a1a1a;color:#CC0000;">ARROW PLATE</span></td>
+                        <td>FREE</td>
+                        <td>FREE</td>
+                    </tr>
+                    <tr>
+                        <td>DIPLOMATIC</td>
+                        <td><span class="plate-mini" style="background:#003580;color:#fff;">BLUE PLATE</span></td>
+                        <td>FREE</td>
+                        <td>FREE</td>
+                    </tr>
+                </tbody>
+            </table>
+        </details>
+
+        <button type="submit" class="btn btn-primary mt-4" id="submit-btn" style="width:100%;padding:13px;">
+            ↓ CHECK IN VEHICLE
+        </button>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const plateMap = {
+        'white_black': { bg: '#FFFFFF', text: '#000000', label: 'PRIVATE' },
+        'yellow_black': { bg: '#FFD700', text: '#000000', label: 'COMMERCIAL' },
+        'green_white': { bg: '#008000', text: '#FFFFFF', label: 'EV PRIVATE' },
+        'green_yellow': { bg: '#008000', text: '#FFD700', label: 'EV COMMERCIAL' },
+        'black_yellow': { bg: '#1a1a1a', text: '#FFD700', label: 'SELF-DRIVE RENTAL' },
+        'red_white': { bg: '#CC0000', text: '#FFFFFF', label: 'TEMPORARY' },
+        'blue_white': { bg: '#003580', text: '#FFFFFF', label: 'DIPLOMATIC' },
+        'red_emblem': { bg: '#CC0000', text: '#FFD700', label: 'PRESIDENT/GOVERNOR' },
+        'arrow_red': { bg: '#1a1a1a', text: '#CC0000', label: 'MILITARY' },
+        'bh_series': { bg: '#FFFFFF', text: '#000000', label: 'BH SERIES' },
+    };
+
+    const platePreview = document.getElementById('plate-preview');
+    const plateNumEl = document.getElementById('plate-number-text');
+    const plateLabelEl = document.getElementById('plate-category-label');
+    const vnumInput = document.getElementById('id_vehicle_number');
+    const stateInput = document.getElementById('id_state_code');
+    const plateTypeEl = document.getElementById('id_plate_type') || document.querySelector('[name="plate_type"]');
+    const mismatchWarn = document.getElementById('state-mismatch-warn');
+    const vnumError = document.getElementById('vnum-error');
+    const mobileInput = document.getElementById('id_mobile');
+    const mobileError = document.getElementById('mobile-error');
+
+    function toUpper(el) {
+        const pos = el.selectionStart;
+        el.value = el.value.toUpperCase();
+        try { el.setSelectionRange(pos, pos); } catch (e) { }
+    }
+
+    function onlyDigits(el) {
+        el.value = el.value.replace(/[^0-9]/g, '');
+    }
+
+    vnumInput.addEventListener('input', () => { toUpper(vnumInput); updatePlate(); validateState(); });
+    stateInput.addEventListener('input', () => { toUpper(stateInput); updatePlate(); validateState(); });
+    if (plateTypeEl) plateTypeEl.addEventListener('change', updatePlate);
+
+    if (mobileInput) {
+        mobileInput.addEventListener('input', () => {
+            onlyDigits(mobileInput);
+            validateMobile();
+        });
+    }
+
+    function updatePlate() {
+        const type = plateTypeEl ? plateTypeEl.value : 'white_black';
+        const num = vnumInput.value.trim().toUpperCase() || 'GJ 00 AA 0000';
+        const cfg = plateMap[type] || plateMap['white_black'];
+        platePreview.style.background = cfg.bg;
+        plateNumEl.style.color = cfg.text;
+        plateLabelEl.style.color = cfg.text;
+        plateNumEl.textContent = num;
+        plateLabelEl.textContent = cfg.label;
+        platePreview.style.borderColor = (cfg.bg === '#1a1a1a') ? '#555' : '#94a3b8';
+    }
+
+    function validateState() {
+        const vnum = vnumInput.value.trim().toUpperCase();
+        const state = stateInput.value.trim().toUpperCase();
+        if (vnum.length >= 2 && state.length >= 2) {
+            if (vnum.substring(0, 2) !== state.substring(0, 2)) {
+                mismatchWarn.style.display = 'block';
+                vnumInput.classList.add('is-invalid');
+                stateInput.classList.add('is-invalid');
+                vnumError.classList.add('show');
+            } else {
+                mismatchWarn.style.display = 'none';
+                vnumInput.classList.remove('is-invalid');
+                stateInput.classList.remove('is-invalid');
+                vnumError.classList.remove('show');
+            }
+        } else {
+            mismatchWarn.style.display = 'none';
+            vnumInput.classList.remove('is-invalid');
+            stateInput.classList.remove('is-invalid');
+            vnumError.classList.remove('show');
+        }
+    }
+
+    function validateMobile() {
+        const val = mobileInput.value.replace(/\D/g, '');
+        if (val.length > 0 && (val.length !== 10 || !'6789'.includes(val[0]))) {
+            mobileInput.classList.add('is-invalid');
+            mobileError.classList.add('show');
+        } else {
+            mobileInput.classList.remove('is-invalid');
+            mobileError.classList.remove('show');
+        }
+    }
+
+    document.getElementById('entry-form').addEventListener('submit', function (e) {
+        const vnum = vnumInput.value.trim().toUpperCase();
+        const state = stateInput.value.trim().toUpperCase();
+        vnumInput.value = vnum;
+        stateInput.value = state;
+        let blocked = false;
+        if (vnum.length >= 2 && state.length >= 2 && vnum.substring(0, 2) !== state.substring(0, 2)) {
+            e.preventDefault();
+            mismatchWarn.style.display = 'block';
+            vnumInput.classList.add('is-invalid');
+            stateInput.classList.add('is-invalid');
+            vnumError.classList.add('show');
+            blocked = true;
+        }
+        if (mobileInput) {
+            const mob = mobileInput.value.replace(/\D/g, '');
+            if (mob.length !== 10 || !'6789'.includes(mob[0])) {
+                e.preventDefault();
+                mobileInput.classList.add('is-invalid');
+                mobileError.classList.add('show');
+                blocked = true;
+            }
+        }
+        if (blocked) { vnumInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    });
+
+    updatePlate();
+    validateState();
+</script>
+{% endblock %}
